@@ -6,14 +6,16 @@ import matplotlib.pyplot as plt
 direct = r"C:\Users\haykg\Documents\university files\Dissertation\MCMC-R-codes\MCMC-python"
 
 # load the generated returns and log volatility
-h_gen = np.loadtxt(f"{direct}\\h100.txt")
 y_gen = np.loadtxt(f"{direct}\\y100.txt")
 
-# total number of variables (h1..100, mu, sigma_eta, phi)
-n = 103
 
-# The number of MCMC iterations:
-N = 10000
+n = 103 # total number of variables (h1..100, mu, sigma_eta, phi)
+
+T = n - 3 # number of observations y_t. also the same as number of h_t
+
+m = 50 # number of latent draws
+
+N = 10000 # The number of MCMC iterations:
 s = 0.01 # cov of MVN s^2*I
 
 # the actual parameters (to be changed)
@@ -24,27 +26,26 @@ s = 0.01 # cov of MVN s^2*I
 # the joint likelihood funtion. x is the vector of parameters.
 
 def log_lik(x): 
-    # x is 103 dimensional. 0:3 are mu, phi and sigma-eta.
+    # x is 3 dimensional: mu, log[(1+phi)/(1-phi)] and log(sigma2_eta)
     mu = x[0]
     sigma2_eta = np.exp(x[1])
     phi = (np.exp(x[2])-1)/(1+np.exp(x[2]))
 
-    # 3:102 are h variables
-    h = x[3:]
-    
-    ### p(y_t|h_t)
-    vec_y = np.zeros(n-3)
-    vec_y = st.norm.pdf(y_gen, 0, np.exp(h/2)) 
+    # matrix H - Txm, each row i has m draws of latent variable h_i
+    # initiazize matrix H - T by m - each clumn is a new draw vector h_1..T 
+    H = np.full((T,m), np.nan)
+    H[0] = st.norm.rvs(mu, np.sqrt(sigma2_eta/(1-phi**2)), m)
+    for i in range(T-1):
+        H[i+1] = st.norm.rvs(mu + phi*(H[i] - mu), np.sqrt(sigma2_eta), m)
 
-    ### p(h_1|mu,phi,sigma_eta) and p(h_t|h_t-1)
-    vec_h = np.zeros(len(h))
-    vec_h[0] = st.norm.pdf(h[0], mu, np.sqrt(sigma2_eta/(1-phi**2)))
-    vec_h[1:] = st.norm.pdf(h[1:],  mu + phi*(h[0:99] - mu), np.sqrt(sigma2_eta))
-    
-    y_loglik = np.sum(np.log(vec_y))
-    h_loglik = np.sum(np.log(vec_h))
-    full_loglik = y_loglik + h_loglik
-    return full_loglik
+
+    Y = np.tile(y_gen[:, None], (1, m)) # matrix Y, each column j is the same vector of obs. y1..T
+
+    Y_pdf = st.norm.pdf(Y, 0, np.exp(H/2)) # calculate the individual pdfs of y_ij conditional on h_ij
+    pdfs = np.sum(Y_pdf, axis = 1)/N # vector pdfs, each element is the likelihood estimate for y_i: 1/N*sumj{p(y_i|h_j)}
+    loglik = np.sum(np.log(pdfs)) # full log likelihood estimator
+
+    return loglik
 
 
 # defining the prior pdfs
@@ -63,24 +64,24 @@ def log_prior(x):
 def log_post(x):
     return log_prior(x) + log_lik(x)
 
-xstart = np.zeros(103)
+xstart = np.full(3,np.nan)
 xstart[0] = -0.2 # mu
 xstart[1] = np.log(0.1**2) # log(sigma2_eta)
 xstart[2] = np.log((1+0.9)/(1-0.9)) # log[(1+phi)/(1-phi)]
-xstart[3:] = h_gen 
 post = log_post(xstart)
 
 print(post)
 
 # initialize a matrix to store the MCMC draws. Store each new vector as a row of a matrix.
-draws = np.full((N,n), np.nan) 
+draws = np.full((N,3), np.nan) 
 draws[0] = xstart
 # the proposal is multivariate normal with N(x_t-1,s^2*I)
-cov = s**2*np.eye(n) # s^2*I
+cov = s**2*np.eye(3) # s^2*I
 oldlik = log_post(xstart)
 xold = draws[0]
+acc = 0
 for i in range(N-1):
-    xnew = st.multivariate_normal.rvs(xold, cov, 1)
+    xnew = st.multivariate_normal.rvs(xold, cov)
     newlik = log_post(xnew)
     # let's define the acceptance ratio
     acc = newlik + st.multivariate_normal.logpdf(xold, xnew, cov) - oldlik - st.multivariate_normal.logpdf(xnew, xold, cov)
@@ -90,13 +91,17 @@ for i in range(N-1):
     if np.log(u) < acc:
         xold = xnew
         oldlik = newlik
+        acc = acc + 1
     draws[i+1] = xold
-print(np.mean(draws, axis = 0))
+
 
 mu_draws = draws[:,0]
 sigma2_draws = np.exp(draws[:,1])
 phi_draws = (np.exp(draws[:,2])-1)/(1+np.exp(draws[:,2]))
-
+mu_mean = np.mean(mu_draws[1000:])
+sigma2_mean = np.mean(sigma2_draws[1000:])
+phi_mean = np.mean(phi_draws[1000:])
+print(f"mu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean}")
 plt.subplot(2,2,1) # plotting mu
 plt.plot(mu_draws)
 
