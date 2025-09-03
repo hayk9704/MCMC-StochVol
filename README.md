@@ -99,3 +99,91 @@ This project requires the following Python libraries:
 
 You can install them via pip:
 `pip install numpy scipy pandas matplotlib arviz`
+
+
+---------------------------------------------------------------
+# MCMC for Stochastic Volatility Models
+
+This repository holds the code for my MSc dissertation project. I wanted to explore how different pseudo-marginal MCMC methods perform when applied to a standard stochastic volatility (SV) model.
+
+The main challenge with SV models is that their likelihood is tough to calculate directly, which makes standard MCMC tricky. The algorithms here get around that by using particle methods to approximate the likelihood. I've implemented a few variations to see which ones are most efficient.
+
+## 📝 Table of Contents
+* [What's Inside](#-whats-inside)
+* [Getting Started](#-getting-started)
+* A Look at the Code
+* [Dependencies](#-dependencies)
+
+## ✨ What's Inside
+
+This project compares a few different samplers, mainly focusing on two flavors of Particle MCMC (PMMH and PM-IS). I've tinkered with them in two main ways:
+1.  **Proposals**: Using a simple, standard random-walk proposal vs. an adaptive one that learns the shape of the posterior as it runs.
+2.  **Randomness**: Using fresh random numbers for each step vs. using correlated random numbers, which can help reduce the noise in the likelihood estimate.
+
+This gives a total of four main algorithms for each "flavor" to compare.
+
+## 🚀 Getting Started
+
+Here’s how you can run the simulations yourself.
+
+### 1. Run a Full Simulation
+
+Your best starting point is one of the `_main_full.py` scripts.
+
+* To check out the **Particle MCMC (PMMH)** methods, just run `PMMH_main_full.py`.
+* To see the **Importance Sampling (PM-IS)** versions, run `PM_IS_main_full.py`.
+
+### 2. What to Expect
+
+When you run one of these main scripts, here's what it'll do:
+1.  It'll cook up some synthetic financial data using the SV model defined in `MCMC_functions.py`.
+2.  It will then run the four different MCMC chains, one after the other. You'll see progress updates printed in the console.
+3.  Once it's done, a Matplotlib window will pop up showing the trace plots for the model parameters. This is a great way to visually check how well each sampler is mixing.
+4.  Finally, it will spit out a detailed CSV file named something like `seed_[...]_T_[...]_results.csv`. This file has all the juicy stats: acceptance ratios, Effective Sample Size (ESS), bias, runtime, etc., for each method.
+
+### 3. Combining Results
+
+If you run the simulation multiple times, you'll end up with a bunch of CSV files. I wrote `extract_stats.py` to help with that.
+1.  Toss all your result CSVs into one folder.
+2.  Open `extract_stats.py` and change the `folder` variable to point to your folder's path.
+3.  Run the script. It will average the results from all your runs and save them in a new `full_T200.csv` file.
+
+## 🛠️ A Look at the Code
+
+For anyone who wants to dig into the details, here’s a breakdown of what each script does.
+
+#### `MCMC_functions.py`
+This is the utility belt for the project. It has all the basics for the SV model:
+* Functions to transform parameters back and forth (`x_to_theta`, `theta_to_x`) for easier sampling.
+* The `log_prior` function, which defines the priors for the model parameters.
+* A `stochvol` class with a `generate` method to create the synthetic data for the simulations.
+
+#### `particle_filter.py`
+This is the engine for the PMMH methods. It implements a Sequential Monte Carlo (SMC) algorithm, aka a particle filter, to estimate the log-likelihood.
+* It uses systematic resampling to avoid the issue where only a few particles have all the weight.
+* I included a `stable_log_pdf` function to prevent numerical errors when calculating densities with very small variances.
+
+#### `PMMH.py` & `PMMH_adaptive.py`
+These are the PMMH samplers. They use the particle filter to get the likelihood estimate at each step.
+* `PMMH.py` uses a simple diagonal Gaussian proposal.
+* `PMMH_adaptive.py` uses a smarter proposal that adapts based on the empirical covariance of the samples it has already drawn.
+* Both can be switched to their "correlated" versions by setting the `rho` parameter to a value close to 1.
+
+#### `PM_IS.py` & `PM_IS_adaptive.py`
+These are similar to the PMMH scripts but use a simpler Importance Sampling (IS) approach to estimate the likelihood instead of a full particle filter.
+* The `latent` function generates batches of the entire volatility path, and the `log_lik` function averages them to get the estimate.
+* Just like the PMMH scripts, this pair comes in a standard (`PM_IS.py`) and an adaptive (`PM_IS_adaptive.py`) version, both with the `rho` parameter for correlation.
+
+#### `m_latent_check.py`
+This is a diagnostic tool I used to figure out how many particles (`m_latent`) were "enough". The goal is to get the variance of the log-likelihood estimate to a target level (around 1.0 for the standard methods). This script runs a test to check that variance for a given number of particles.
+
+## 📦 Dependencies
+To get this running, you'll need the usual suspects from the Python data science world:
+* NumPy
+* SciPy
+* Pandas
+* Matplotlib
+* ArviZ
+
+You can install them all with pip:
+`pip install numpy scipy pandas matplotlib arviz`
