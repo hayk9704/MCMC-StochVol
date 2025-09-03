@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import norm, beta, gamma, halfnorm
+from scipy.stats import norm, beta, gamma
 # the commonly used prior distributions:
 # m ~ N(0, 10), (phi + 1)/2 ~ Beta(20, 1/5) and sigma2 Gam(1/2, 1/2).
 

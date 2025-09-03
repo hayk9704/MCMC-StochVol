@@ -1,0 +1,183 @@
+import os
+import numpy as np
+from scipy import stats as st
+import matplotlib.pyplot as plt
+from MCMC_functions import theta_to_x as xstart, stochvol, log_prior
+from scipy.special import logsumexp
+import arviz as az
+# load the generated returns and log volatility
+
+
+
+"""
+This code applies the correlated PM-IS algorithm to the SV model - proposal with adaptive jumps
+set rho = 0 to get the standard (non-correlated) PM-IS with adaptive jumps
+"""
+
+
+# Input - T x m matrix of auxiliary RV - U and pars x ----- Output - T x m matrix H of latent variables
+def latent(x, U):
+                                                                    # x is 3 dimensional: mu, log(sigma2_eta) and log[(1+phi)/(1-phi)]
+    mu = x[0]
+    sigma2_eta = np.exp(x[1])
+    phi = (np.exp(x[2])-1)/(1+np.exp(x[2]))
+    
+
+    H = np.full((U.shape), np.nan)                                  # matrix H - Txm, each row i has m draws of latent variable h_i/each clumn is a new draw vector h_1..T 
+    H[0] = mu + np.sqrt(sigma2_eta/(1-phi**2))*U[0]
+    for i in range(H.shape[0]-1):
+        H[i+1] = mu + phi*(H[i] - mu) + np.sqrt(sigma2_eta)*U[i+1]
+    return H
+
+
+# given matrix H containing diff draws of latent variables as columns, calculate the loglik
+def log_lik(H, y): 
+    m = H.shape[1]
+    Y = np.tile(y[:, None], (1, m))                                 # matrix Y, each column j is the same vector of obs. y1..T
+
+    Y_pdf = st.norm.logpdf(Y, 0, np.exp(H/2))                       # calculate the individual pdfs of y_tj conditional on h_tj
+    pdfs = np.sum(Y_pdf, axis = 0)
+   
+    loglik = logsumexp(pdfs) - np.log(m)                            # doing the log sum exp trick to avoid numerical underflow
+    return loglik
+
+
+#log_prior + log_lik = log_post
+def log_post(x, latent, y):
+    return log_prior(x) + log_lik(H = latent, y =y)
+
+
+
+# main correlated MCMC chain
+def PM_IS_adaptive(ys, N_mcmc = 20000, x_first = xstart(), s = 2.38**2/3, m_latent = 50, burnin = 2000, rho = 0.9):
+    U_old = np.random.normal(size = len(ys)*m_latent).reshape(len(ys), m_latent)        # first standard normal vector dims (T, m+1)
+    xold = x_first
+
+    # specific to adaptive jumps
+    mean = xold                                                     # initializing the mean
+    CC = np.zeros((3,3))                                            # initializing empirical covariance matrix
+    eps = 1e-6                                                      # the regularization term to make sure cov is positive definite
+    covlist = []
+    chol = np.linalg.cholesky(s*np.eye(3))
+
+    
+    draws = np.full((N_mcmc,3), np.nan) 
+    
+    loglik0 = log_lik(latent(xold, U_old), ys)
+    draws[0] = xold
+    
+    
+    oldloglik = loglik0 + log_prior(xold)
+    acc_all = 0 # to count the number of acceptances
+
+    for i in range(N_mcmc-1):
+        covlist.append(CC)
+        xnew = xold + chol@np.random.normal(size=3)
+
+
+        U_new = rho*U_old + np.sqrt(1-rho**2)*np.random.normal(size=U_old.shape)
+        loglik = log_lik(latent(xnew, U_new), ys)
+        newloglik = loglik + log_prior(xnew)
+
+
+        acc = newloglik - oldloglik                                                     # the acceptance ratio
+        
+        #uniform draw to approve acceptance
+        u = np.random.uniform()
+        if np.log(u) < acc:
+            xold = xnew
+            oldloglik = newloglik
+            U_old = U_new
+            acc_all = acc_all + 1
+        CC = CC + (1/(i+1))*(np.outer(xold - mean, xold - mean) - CC)                   # updating empirical covariance
+        mean = mean + (1/(i+1))*(xold - mean)                                           # updating empirical mean
+        cov = s*CC + eps*np.eye(3)                                                      # using empirical covariance to get a cov. for the jump
+        chol = np.linalg.cholesky(cov)
+        draws[i+1] = xold
+        if i%1000 == 0:
+            print(f"MCMC iteration {i}")
+
+    mu_draws = draws[:,0]
+    mu_burnin_draws = mu_draws[burnin:]
+    sigma2_draws = np.exp(draws[:,1])
+    sigma2_burnin_draws = sigma2_draws[burnin:]
+    phi_draws = (np.exp(draws[:,2])-1)/(1+np.exp(draws[:,2]))
+    phi_burnin_draws = phi_draws[burnin:]
+    acc_ratio = acc_all/(N_mcmc-1)
+
+    # credible intervals
+    lo_mu, hi_mu = np.quantile(mu_burnin_draws, [0.025, 0.975])
+    lo_sigma2, hi_sigma2 = np.quantile(sigma2_burnin_draws, [0.025, 0.975])
+    lo_phi, hi_phi = np.quantile(phi_burnin_draws, [0.025, 0.975])
+    pars_95 = {"mu": (lo_mu, hi_mu),
+               "sigma2_eta": (lo_sigma2, hi_sigma2),
+               "phi": (lo_phi, hi_phi)}
+    return {"mu_draws": mu_draws,
+            "sigma2_draws": sigma2_draws,
+            "phi_draws":phi_draws,
+            "acc_ratio": acc_ratio,
+            "mu_burnin_draws": mu_burnin_draws,
+            "sigma2_burnin_draws": sigma2_burnin_draws,
+            "phi_burnin_draws": phi_burnin_draws,
+            "covlist": covlist,
+            "pars_95": pars_95}
+
+
+
+    # run this only if the code is run directly
+if __name__ == "__main__":
+
+    m_latent = 900
+    s = 2.38**2/3
+
+    rho = 0
+    T = 200
+
+    real_pars = {"mu": -0.86, "sigma2_eta": 0.0225, "phi": 0.98}
+
+    stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = T, seed = 112)
+    y_gen = stochvol.ys
+    h_gen = stochvol.hs
+    values = PM_IS_adaptive(ys = y_gen, N_mcmc = 8000, x_first = xstart(), s = s, m_latent = m_latent, burnin = 2000, rho = rho)
+    mu_mean = np.mean(values["mu_burnin_draws"])
+    sigma2_mean = np.mean(values["sigma2_burnin_draws"])
+    phi_mean = np.mean(values["phi_burnin_draws"])
+    acc_ratio = values["acc_ratio"]
+    print(f" for m = {m_latent}, s = {s}: \nmu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean} \nacc ratio: {acc_ratio}")
+
+
+    fig, axes = plt.subplots(2,3, figsize = (16, 10))
+    axes = axes.ravel()
+    fig.suptitle(f"m = {m_latent}, s = {s}, rho = {rho}, T = {T}")
+
+    az.plot_autocorr(values["mu_burnin_draws"], ax=axes[0])
+    axes[0].set_title("Autocorrelation of mu")
+    az.plot_autocorr(values["sigma2_burnin_draws"], ax=axes[1])
+    axes[1].set_title("Autocorrelation of sigma2")
+    az.plot_autocorr(values["phi_burnin_draws"], ax=axes[2])
+    axes[2].set_title("Autocorrelation of phi")
+    axes[3].plot(values["mu_draws"], linewidth = 0.75)
+    axes[3].set_title("mu plot")
+    axes[4].plot(values["sigma2_draws"], linewidth = 0.75)
+    axes[4].set_title("sigma2 plot")
+    axes[5].plot(values["phi_draws"], linewidth = 0.75)
+    axes[5].set_title("phi plot")
+    plt.show()
+
+# set up the directory
+
+"""
+
+
+code to check the convergence of the var covar:
+
+covlist = values["covlist"]
+muchain = np.full(len(covlist),np.nan)
+for i in range(len(covlist)):
+    mu = covlist[i][0,0]
+    muchain[i] = mu
+plt.plot(muchain)
+
+"""
+
+

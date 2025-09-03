@@ -12,8 +12,8 @@ import arviz as az
 from scipy import stats as st
 import matplotlib.pyplot as plt
 from MCMC_functions import stochvol, theta_to_x as xstart
-from adaptive_PMCMC_correl import PMCMC as PMCMC_correl_adapt
-from PMCMC_correl import PMCMC as PMCMC_correl_std
+from PMMH_adaptive import PMCMC as PMCMC_correl_adapt
+from PMMH import PMCMC as PMCMC_correl_std
 """
 all MCMC functions return dicts:
             {"mu_draws": mu_draws,
@@ -29,8 +29,11 @@ plain MCMC - 23%
 pseudo-marginal MCMC - 7%
 correlated-pseudo-marginal MCMC - 23%
 """
-run_seed = int(np.random.default_rng().integers(0, 2**32 - 1, dtype=np.uint32))
+
+# run_seed = 4247505863
+run_seed = int(np.random.default_rng().integers(0, 2**32, dtype=np.uint32))
 real_pars = {"mu": -0.86, "sigma2_eta": 0.0225, "phi": 0.97}
+T_obs = 700
 
 
 N= 20000 # number of MCMC iterations
@@ -38,7 +41,7 @@ x_0 = xstart(mu = -0.6, phi = 0.8, sigma2_eta = 0.02) # the starting parameter v
 
 
 # generating the data
-stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = 700, seed = run_seed)
+stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = T_obs, seed = run_seed)
 y_gen = stochvol.ys
 h_gen = stochvol.hs
 
@@ -344,7 +347,7 @@ PMCMC_adapt_correl_pars_est = {
 full_info = [PMCMC_std_nocorrel_pars_est, PMCMC_std_correl_pars_est, PMCMC_adapt_nocorrel_pars_est, PMCMC_adapt_correl_pars_est]
 df1 = pd.DataFrame(full_info)
 
-fname = f"seed_{run_seed}_T_700_results.csv"
+fname = f"seed_{run_seed}_T_{T_obs}_results.csv"
 df1.to_csv(fname, index=False)
 print("Saved:", fname)
 """
