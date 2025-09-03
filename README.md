@@ -1,10 +1,9 @@
 # MCMC Methods for Stochastic Volatility Models
 
-This repository contains the Python implementation of several pseudo-marginal Markov chain Monte Carlo (MCMC) algorithms applied to a standard stochastic volatility (SV) model. The project compares the efficiency of different sampling strategies, including Particle Markov Chain Monte Carlo (PMMH) and MCMC with importance sampling (PM-IS), each with enhancements like correlated proposals and adaptive jumps.
+This repository contains the Python implementation of several pseudo-marginal Markov chain Monte Carlo (MCMC) algorithms applied to a standard stochastic volatility (SV) model. The project compares the efficiency of different sampling strategies, including Particle Markov Chain Monte Carlo (PMMH) and MCMC with importance sampling (PM-IS), each both with and without enhancements like correlated proposals and adaptive jumps.
 
 ## Table of Contents
 * [Overview](#-overview)
-* [Features](#-features)
 * [How to Use](#-how-to-use)
 * [Technical File Descriptions](#-technical-file-descriptions)
 * [Dependencies](#-dependencies)
@@ -13,18 +12,9 @@ This repository contains the Python implementation of several pseudo-marginal Ma
 
 The core objective of this project is to estimate the parameters of a stochastic volatility model, which is crucial for understanding and forecasting risk in financial time series. Standard MCMC methods are often inefficient for such models due to the intractable likelihood function. This repository explores advanced pseudo-marginal methods that overcome this challenge by approximating the likelihood.
 
-The project evaluates four main PMMH algorithms based on two key dimensions:
+The project evaluates four variations of the two main pseudo-marginal MCMC algorithms (PM-IS and PMMH) based on two key dimensions:
 1.  **Proposal Mechanism**: Standard diagonal Gaussian proposal vs. an adaptive proposal that learns the covariance structure of the posterior.
 2.  **Randomness**: Standard (independent) proposals vs. correlated proposals that reduce the variance of the likelihood estimator.
-
-## Features
-
-* **Stochastic Volatility Model**: Generation of synthetic financial data based on a standard SV model.
-* **Particle Filter**: An efficient particle filter with systematic resampling to estimate the log-likelihood of the SV model.
-* **PMMH Implementation**: Particle MCMC with standard and adaptive proposals.
-* **PM-IS Implementation**: An alternative pseudo-marginal approach using importance sampling to estimate the likelihood.
-* **Correlated Proposals**: Implementation of correlated auxiliary random variables to improve sampler efficiency.
-* **Performance Comparison**: Main scripts (`PMMH_main_full.py`, `PM_IS_main_full.py`) to run all algorithm variants, compare their performance, and save results to a CSV file.
 
 ## How to Use
 
@@ -55,22 +45,22 @@ When you run one of the main files (e.g., `PMMH_main_full.py`):
 If you run the main scripts multiple times (which generates multiple CSV files), you can use the `extract_stats.py` script to aggregate the results.
 1.  Place all your result CSV files into a single folder.
 2.  Update the `folder` path in `extract_stats.py` to point to that folder.
-3.  Run the script. It will calculate the average of all statistics across your simulation runs and save them into a new file named `full_T200.csv`.
+3.  Run the script. It will calculate the average of all statistics across your simulation runs and save them into a new file named `full_T_[...].csv`.
 
 ## Technical File Descriptions
 
 This section provides a more detailed, technical breakdown of each Python script in the repository.
 
 #### `MCMC_functions.py`
-This is a utility script containing core components of the stochastic volatility model.
+This is a script containing core components of the stochastic volatility model.
 * **Parameter Transformations**: Includes functions `x_to_theta` and `theta_to_x` to transform parameters between the natural space (e.g., `phi`) and the estimation space (e.g., `log[(1+phi)/(1-phi)]`) for unconstrained optimization.
 * **Log Prior**: The `log_prior` function calculates the log-prior probability of the parameters based on standard priors: a Normal prior for `mu`, a Beta prior for `phi`, and a Gamma prior for `sigma2_eta`.
-* **Data Generation**: The `stochvol` class contains a `generate` method to produce synthetic time-series data (`ys`) and the corresponding latent log-volatility states (`hs`).
+* **Data Generation**: The `stochvol` class contains a `generate` method to produce synthetic time-series data (`ys`) and the corresponding latent log-volatility states (`hs`) for the specified parameter values ('mu, sigma2_eta, phi`) and sample length (`t`).
 
 #### `particle_filter.py`
 This file implements a particle filter using Sequential Monte Carlo (SMC) to estimate the log-likelihood of the SV model, which is required by the PMMH algorithms.
 * **`SMC` function**: The main function that iterates through time, calling the particle propagation and resampling steps to compute the total log-likelihood for a given set of parameters (`x`) and random numbers (`U`).
-* **`systematic_resample`**: An efficient resampling function that helps mitigate particle degeneracy.
+* **`systematic_resample`**: An efficient resampling function to resample ancestor indices, using only one uniform random number in process.
 * **`stable_log_pdf`**: A numerically stable function to calculate the log probability density function of the observations, avoiding underflow issues with `np.exp()`.
 
 #### `PMMH.py` and `PMMH_adaptive.py`
@@ -81,7 +71,7 @@ These scripts implement the Particle Markov Chain Monte Carlo (PMMH) algorithm. 
 
 #### `PM_IS.py` and `PM_IS_adaptive.py`
 These scripts implement a pseudo-marginal MCMC algorithm where the likelihood is estimated using Importance Sampling (IS) instead of a particle filter.
-* **`latent` function**: Generates `m_latent` draws of the entire latent volatility path `h` based on the model parameters.
+* **`latent` function**: Generates draws of the entire latent volatility path `h` of length `m_latent`  based on the model parameters.
 * **`log_lik` function**: Calculates the log-likelihood estimate from the generated latent paths using the log-sum-exp trick for numerical stability.
 * Like their PMMH counterparts, these files implement both a standard diagonal proposal (`PM_IS.py`) and an adaptive proposal (`PM_IS_adaptive.py`), with the option for correlated randomness via the `rho` parameter.
 
