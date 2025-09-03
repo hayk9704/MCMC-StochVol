@@ -2,14 +2,14 @@
 
 This repository contains the Python implementation of several pseudo-marginal Markov chain Monte Carlo (MCMC) algorithms applied to a standard stochastic volatility (SV) model. The project compares the efficiency of different sampling strategies, including Particle Markov Chain Monte Carlo (PMMH) and MCMC with importance sampling (PM-IS), each with enhancements like correlated proposals and adaptive jumps.
 
-## 📝 Table of Contents
+## Table of Contents
 * [Overview](#-overview)
 * [Features](#-features)
 * [How to Use](#-how-to-use)
 * [Technical File Descriptions](#-technical-file-descriptions)
 * [Dependencies](#-dependencies)
 
-## 🔭 Overview
+## Overview
 
 The core objective of this project is to estimate the parameters of a stochastic volatility model, which is crucial for understanding and forecasting risk in financial time series. Standard MCMC methods are often inefficient for such models due to the intractable likelihood function. This repository explores advanced pseudo-marginal methods that overcome this challenge by approximating the likelihood.
 
@@ -17,7 +17,7 @@ The project evaluates four main PMMH algorithms based on two key dimensions:
 1.  **Proposal Mechanism**: Standard diagonal Gaussian proposal vs. an adaptive proposal that learns the covariance structure of the posterior.
 2.  **Randomness**: Standard (independent) proposals vs. correlated proposals that reduce the variance of the likelihood estimator.
 
-## ✨ Features
+## Features
 
 * **Stochastic Volatility Model**: Generation of synthetic financial data based on a standard SV model.
 * **Particle Filter**: An efficient particle filter with systematic resampling to estimate the log-likelihood of the SV model.
@@ -26,7 +26,7 @@ The project evaluates four main PMMH algorithms based on two key dimensions:
 * **Correlated Proposals**: Implementation of correlated auxiliary random variables to improve sampler efficiency.
 * **Performance Comparison**: Main scripts (`PMMH_main_full.py`, `PM_IS_main_full.py`) to run all algorithm variants, compare their performance, and save results to a CSV file.
 
-## 🚀 How to Use
+## How to Use
 
 This guide explains how to run a full comparison of the different MCMC algorithms and generate results.
 
@@ -57,7 +57,7 @@ If you run the main scripts multiple times (which generates multiple CSV files),
 2.  Update the `folder` path in `extract_stats.py` to point to that folder.
 3.  Run the script. It will calculate the average of all statistics across your simulation runs and save them into a new file named `full_T200.csv`.
 
-## 🛠️ Technical File Descriptions
+## Technical File Descriptions
 
 This section provides a more detailed, technical breakdown of each Python script in the repository.
 
@@ -89,7 +89,7 @@ These scripts implement a pseudo-marginal MCMC algorithm where the likelihood is
 A diagnostic script used to calibrate the number of particles (`m_latent`) needed for the likelihood estimators.
 * It implements the methodology proposed in the literature: for standard pseudo-marginal methods, the variance of the log-likelihood estimate should be approximately 1. For correlated methods, the variance of the *difference* between consecutive log-likelihood estimates should be around 1. This script runs simulations to find the `m_latent` that satisfies these conditions.
 
-## 📦 Dependencies
+## Dependencies
 This project requires the following Python libraries:
 * NumPy
 * SciPy
