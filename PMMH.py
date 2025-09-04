@@ -77,7 +77,7 @@ def PMCMC(ys, N_mcmc = 20000, x_first = xstart(), s = 2.38**2/3, m_latent = 50, 
     # run this only if the code is run directly
 if __name__ == "__main__":
 
-    theseed = None
+    theseed = 121
 
     m_latent = 20
     s = 0.15
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     sigma2_mean = np.mean(values["sigma2_burnin_draws"])
     phi_mean = np.mean(values["phi_burnin_draws"])
     acc_ratio = values["acc_ratio"]
-    print(f" for m = {m_latent}, s = {s}: \nmu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean} \nacc ratio: {acc_ratio}")
+    print(f" for m = {m_latent}, s = {s}, and seed = {theseed}: \nmu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean} \nacc ratio: {acc_ratio}")
 
 
     fig, axes = plt.subplots(2,3, figsize = (16, 10))

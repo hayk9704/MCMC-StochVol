@@ -125,7 +125,7 @@ if __name__ == "__main__":
     sigma2_mean = np.mean(values["sigma2_burnin_draws"])
     phi_mean = np.mean(values["phi_burnin_draws"])
     acc_ratio = values["acc_ratio"]
-    print(f"for m = {m_latent}, s = {s}: \nmu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean} \nacc ratio: {acc_ratio}")
+    print(f"for m = {m_latent}, s = {s}, and seed = {theseed}: \nmu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean} \nacc ratio: {acc_ratio}")
 
 
     fig, axes = plt.subplots(2,3, figsize = (16, 10))
