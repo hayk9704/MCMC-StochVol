@@ -87,21 +87,32 @@ def PMCMC(ys, N_mcmc = 20000, x_first = xstart(), s = 2.38**2/3, m_latent = 50, 
 
     # run this only if the code is run directly
 if __name__ == "__main__":
+
+    theseed = 101
+
+    m_latent = 20
+    s = 2.38**2/3
+
+    rho = 0.99
+    T = 700
+
     real_pars = {"mu": -0.86, "sigma2_eta": 0.0225, "phi": 0.98}
 
-    stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = 700, seed = None)
+    stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = T, seed = theseed)
     y_gen = stochvol.ys
     h_gen = stochvol.hs
-    values = PMCMC(ys = y_gen, N_mcmc = 5000, x_first = xstart(), s = 0.15, m_latent = 80, burnin = 2000, rho = 0.99)
+    values = PMCMC(ys = y_gen, N_mcmc = 8000, x_first = xstart(), s = s, m_latent = m_latent, burnin = 2000, rho = rho)
     mu_mean = np.mean(values["mu_burnin_draws"])
     sigma2_mean = np.mean(values["sigma2_burnin_draws"])
     phi_mean = np.mean(values["phi_burnin_draws"])
     acc_ratio = values["acc_ratio"]
-    print(f"mu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean} \nacc ratio: {acc_ratio}")
+    print(f" for m = {m_latent}, s = {s}: \nmu_mean: {mu_mean} \nsigma2_mean: {sigma2_mean} \nphi_mean: {phi_mean} \nacc ratio: {acc_ratio}")
 
 
     fig, axes = plt.subplots(2,3, figsize = (16, 10))
     axes = axes.ravel()
+    fig.suptitle(f"m = {m_latent}, s = {s}, rho = {rho}, T = {T}")
+
     az.plot_autocorr(values["mu_burnin_draws"], ax=axes[0])
     axes[0].set_title("Autocorrelation of mu")
     az.plot_autocorr(values["sigma2_burnin_draws"], ax=axes[1])

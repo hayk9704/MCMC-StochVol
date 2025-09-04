@@ -127,6 +127,8 @@ def PM_IS_adaptive(ys, N_mcmc = 20000, x_first = xstart(), s = 2.38**2/3, m_late
     # run this only if the code is run directly
 if __name__ == "__main__":
 
+    theseed = None
+
     m_latent = 900
     s = 2.38**2/3
 
@@ -135,7 +137,7 @@ if __name__ == "__main__":
 
     real_pars = {"mu": -0.86, "sigma2_eta": 0.0225, "phi": 0.98}
 
-    stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = T, seed = 112)
+    stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = T, seed = theseed)
     y_gen = stochvol.ys
     h_gen = stochvol.hs
     values = PM_IS_adaptive(ys = y_gen, N_mcmc = 8000, x_first = xstart(), s = s, m_latent = m_latent, burnin = 2000, rho = rho)
