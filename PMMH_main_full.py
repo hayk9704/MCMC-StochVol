@@ -1,9 +1,13 @@
 import os
+os.makedirs("chains", exist_ok=True)
+os.makedirs("full_info", exist_ok=True)
+
+'''
 os.environ["MKL_NUM_THREADS"]="1"
 os.environ["OMP_NUM_THREADS"]="1"
 os.environ["OPENBLAS_NUM_THREADS"]="1"
 os.environ["NUMEXPR_NUM_THREADS"]="1"
-
+'''
 
 import time
 import numpy as np
@@ -30,13 +34,13 @@ pseudo-marginal MCMC - 7%
 correlated-pseudo-marginal MCMC - 23%
 """
 
-# run_seed = 4247505863
-run_seed = int(np.random.default_rng().integers(0, 2**32, dtype=np.uint32))
+run_seed = 101
+# run_seed = int(np.random.default_rng().integers(0, 2**32, dtype=np.uint32))
 real_pars = {"mu": -0.86, "sigma2_eta": 0.0225, "phi": 0.97}
 T_obs = 700
 
 
-N= 20000 # number of MCMC iterations
+N= 10000 # number of MCMC iterations
 x_0 = xstart(mu = -0.6, phi = 0.8, sigma2_eta = 0.02) # the starting parameter values for the chain
 
 
@@ -50,7 +54,7 @@ h_gen = stochvol.hs
 t0 = time.perf_counter()
 
 print("starting PMCMC_std_nocorrel")
-PMCMC_std_nocorrel = PMCMC_correl_std(ys = y_gen, N_mcmc = N, x_first = x_0, s = 0.15, m_latent = 150, burnin = 5000, rho = 0)
+PMCMC_std_nocorrel = PMCMC_correl_std(ys = y_gen, N_mcmc = N, x_first = x_0, s = 0.15, m_latent = 150, burnin = 2500, rho = 0)
 
 
 t1 = time.perf_counter()
@@ -61,7 +65,7 @@ print(f"PMCMC_std_nocorrel - completed. time: {t_PMCMC_std_nocorrel} seconds\n")
 
 #------------------------------------PMCMC standard with correlation-------------------
 print("starting PMCMC_std_correl \n")
-PMCMC_std_correl = PMCMC_correl_std(ys = y_gen, N_mcmc = N, x_first = x_0, s = 0.15, m_latent = 80, burnin = 5000, rho = 0.99)
+PMCMC_std_correl = PMCMC_correl_std(ys = y_gen, N_mcmc = N, x_first = x_0, s = 0.15, m_latent = 35, burnin = 2500, rho = 0.99)
 
 
 t2 = time.perf_counter()
@@ -72,7 +76,7 @@ print(f"PMCMC_std_correl - completed. time: {t_PMCMC_std_correl} seconds\n")
 
 #------------------------------------PMCMC adaptive no correlation---------------------
 print("starting PMCMC_adapt_nocorrel")
-PMCMC_adapt_nocorrel = PMCMC_correl_adapt(ys = y_gen, N_mcmc = N, x_first = x_0, s = 2.38**2/3, m_latent = 150, burnin = 5000, rho = 0)
+PMCMC_adapt_nocorrel = PMCMC_correl_adapt(ys = y_gen, N_mcmc = N, x_first = x_0, s = 2.38**2/3, m_latent = 150, burnin = 2500, rho = 0)
 
 
 t3 = time.perf_counter()
@@ -83,7 +87,7 @@ print(f"PMCMC_adapt_nocorrel - completed. time: {t_PMCMC_adapt_nocorrel} seconds
 
 #-------------------------------------PMCMC adaptive with correlation------------------
 print("starting PMCMC_adapt_correl")
-PMCMC_adapt_correl = PMCMC_correl_adapt(ys = y_gen, N_mcmc = N, x_first = x_0, s = 2.38**2/3, m_latent = 80, burnin = 5000, rho = 0.99)
+PMCMC_adapt_correl = PMCMC_correl_adapt(ys = y_gen, N_mcmc = N, x_first = x_0, s = 2.38**2/3, m_latent = 35, burnin = 2500, rho = 0.99)
 
 
 t4 = time.perf_counter()
@@ -347,13 +351,29 @@ PMCMC_adapt_correl_pars_est = {
 full_info = [PMCMC_std_nocorrel_pars_est, PMCMC_std_correl_pars_est, PMCMC_adapt_nocorrel_pars_est, PMCMC_adapt_correl_pars_est]
 df1 = pd.DataFrame(full_info)
 
-fname = f"seed_{run_seed}_T_{T_obs}_results.csv"
+fname = f"full_info/seed_{run_seed}_T_{T_obs}_results.csv"
 df1.to_csv(fname, index=False)
 print("Saved:", fname)
+
+# this is to same the full chains as csv files
+
+def fname(tag):
+    return f"chains/PMCMC_{tag}_{run_seed}_T_{T_obs}_chain_{np.random.choice(10**5)}.csv"
+
+keys_to_keep = ["mu_draws", "sigma2_draws", "phi_draws"]
+
+pd.DataFrame({key: PMCMC_std_nocorrel[key] for key in keys_to_keep}).to_csv(fname("std_nocorrel"), index = False)
+pd.DataFrame({key: PMCMC_std_correl[key] for key in keys_to_keep}).to_csv(fname("std_correl"), index = False)
+pd.DataFrame({key: PMCMC_adapt_nocorrel[key] for key in keys_to_keep}).to_csv(fname("adapt_nocorrel"), index = False)
+pd.DataFrame({key: PMCMC_adapt_correl[key] for key in keys_to_keep}).to_csv(fname("adapt_correl"), index = False)
+
+print("All chains saved")
+
 """
 To calculate the bias - run experiment 30 times with different DGP (different seeds).
 Then get the average of the individual biases to calculate the full bias.
 
 For root mean squared error - square of the bias - (estimator["mu] - real_pars["mu"])**2
 and get the average across the chains
+
 """
