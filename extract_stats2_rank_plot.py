@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
+import arviz as az
 
 '''
 My steps:
@@ -12,6 +13,7 @@ My steps:
 (ii) Next make sure to look into some numeric reports to understand if they target the same d.
 
 '''
+
 #listing all models here
 model_T700_nocorrel_std = "T = 700, non-correlated PMMH - gaussian jumps"
 model_T700_correl_std = "T = 700, correlated PMMH - gaussian jumps"
@@ -29,9 +31,9 @@ model_T200_nocorrel_adapt_PM_IS = "T = 200, non-correlated PM-IS - adaptive jump
 model_T200_correl_adapt_PM_IS = "T = 200, non-correlated PM-IS - adaptive jumps"
 
 # choose the model for the header of the graph
-chosen_model = model_T700_correl_std
+chosen_model = model_T200_correl_adapt_PMMH
 # choose the folder where the chains of a specific model are stored
-model_folder = Path(r"C:\Users\haykg\Documents\chains_PMMH_t700\t700_std_correl")
+model_folder = Path(r"C:\Users\haykg\Documents\chains_t200\t200_adapt_correl_PMMH")
 
 burnin = 2500
 
@@ -111,6 +113,22 @@ for j in ECDFs:
         ECDF = ECDF[ranks]
         ECDFs[j].append(ECDF)
 
+
+# reshaping the arrays of parameters to run diagnostics with arviz
+az_arrays = {"mu": np.reshape(all_mu, (m, N_chain)),
+             "sigma2": np.reshape(all_sigma2, (m, N_chain)),
+             "phi": np.reshape(all_phi, (m, N_chain))}
+
+idata = az.from_dict(                       # this is the idata format for arviz
+    posterior = az_arrays
+)
+
+df_summary = az.summary(idata, var_names=["mu","sigma2","phi"],            # summary dataframe to export
+                 round_to=5)
+
+
+
+# the figures part
 colors = plt.cm.viridis(np.linspace(0, 1, m))
 
 fig, axes = plt.subplots(1,3, figsize = (35,10))
@@ -129,12 +147,16 @@ for i in range(m):
     axes[2].plot(norm_perchain["phi"][i][np.argsort(norm_perchain["phi"][i])],ECDFs["phi"][i][np.argsort(norm_perchain["phi"][i])], color=colors[i],)
 
 
-# save the figure both as pdf and png
+# save the figure both as pdf and png and the dataframe as csv
 save_path_pdf = f"{model_folder}/{chosen_model}.pdf"
 save_path_png = f"{model_folder}/{chosen_model}.png"
 
+
+df_summary.to_csv(f"{model_folder}/{chosen_model}.csv")             # save the df summary
+print("summary saved as csv")
+
 fig.savefig(save_path_png, dpi=300, bbox_inches='tight')
 fig.savefig(save_path_pdf, bbox_inches='tight', transparent=False)
-print(f"figure samed as{model_folder}//{chosen_model}")
+print(f"figures saved at {model_folder}")
 plt.show()
 

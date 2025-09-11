@@ -41,7 +41,7 @@ T_obs = 200
 
 
 N= 10000 # number of MCMC iterations
-x_0 = xstart(mu = -0.6, phi = 0.8, sigma2_eta = 0.02) # the starting parameter values for the chain
+x_0 = xstart(mu = -0.2, phi = 0.9, sigma2_eta = 0.2) # the starting parameter values for the chain
 
 
 # generating the data
@@ -356,10 +356,10 @@ df1.to_csv(fname, index=False)
 print("Saved:", fname)
 
 
-# this is to same the full chains as csv files
+# this is to save the full chains as csv files
 
 def fname(tag):
-    return f"chains/PM_IS_{tag}_{run_seed}_T_{T_obs}_chain_{np.random.choice(10**5)}.csv"
+    return f"chains_PM_IS/PM_IS_{tag}_{run_seed}_T_{T_obs}_chain_{np.random.choice(10**5)}.csv"
 
 keys_to_keep = ["mu_draws", "sigma2_draws", "phi_draws"]
 
