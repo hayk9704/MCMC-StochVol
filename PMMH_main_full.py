@@ -1,6 +1,6 @@
 import os
-os.makedirs("chains", exist_ok=True)
-os.makedirs("full_info", exist_ok=True)
+os.makedirs("chains_PMMH_t700", exist_ok=True)
+os.makedirs("full_info_PMMH_t_700", exist_ok=True)
 
 '''
 os.environ["MKL_NUM_THREADS"]="1"
@@ -41,7 +41,7 @@ T_obs = 700
 
 
 N= 10000 # number of MCMC iterations
-x_0 = xstart(mu = -0.6, phi = 0.8, sigma2_eta = 0.02) # the starting parameter values for the chain
+x_0 = xstart(mu = -0.9, phi = 0.3, sigma2_eta = 0.7) # the starting parameter values for the chain
 
 
 # generating the data
@@ -351,14 +351,14 @@ PMCMC_adapt_correl_pars_est = {
 full_info = [PMCMC_std_nocorrel_pars_est, PMCMC_std_correl_pars_est, PMCMC_adapt_nocorrel_pars_est, PMCMC_adapt_correl_pars_est]
 df1 = pd.DataFrame(full_info)
 
-fname = f"full_info/seed_{run_seed}_T_{T_obs}_results.csv"
+fname = f"full_info_PMMH_t_700/seed_{run_seed}_T_{T_obs}_{np.random.choice(10**5)}_results.csv"
 df1.to_csv(fname, index=False)
 print("Saved:", fname)
 
 # this is to same the full chains as csv files
 
 def fname(tag):
-    return f"chains/PMCMC_{tag}_{run_seed}_T_{T_obs}_chain_{np.random.choice(10**5)}.csv"
+    return f"chains_PMMH_t700/PMCMC_{tag}_{run_seed}_T_{T_obs}_chain_{np.random.choice(10**5)}.csv"
 
 keys_to_keep = ["mu_draws", "sigma2_draws", "phi_draws"]
 

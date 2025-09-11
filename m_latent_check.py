@@ -82,12 +82,12 @@ def IS_m_check(ys, N_mcmc = 20000, x = xstart(), m_latent = 50, burnin = 2000, r
 
 if __name__ =="__main__":
     theseed = None
-    m_particles = 20                                                       # number of particles to check
-    T_obs = 700                                                              # number of obs.
+    m_particles = 25                                                      # number of particles to check
+    T_obs = 200                                                              # number of obs.
     real_pars = {"mu": -0.86, "sigma2_eta": 0.0225, "phi": 0.98}
     stochvol.generate(mu = real_pars["mu"], phi = real_pars["phi"], sigma2_eta = real_pars["sigma2_eta"], T = T_obs, seed = theseed)
     y_gen = stochvol.ys
-    par_vector = xstart(mu = -0.86, phi = 0.98, sigma2_eta = 0.0225)  
+    par_vector = xstart(mu = -0.85, phi = 0.9, sigma2_eta = 0.03)  
 
 
     PMMH_m_check(ys = y_gen, N_mcmc = 400, x = par_vector, m_latent = m_particles, burnin = 100, rho = 0.99)
