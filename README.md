@@ -1,5 +1,3 @@
-Of course. Here is the updated README, revised to accurately reflect the new file structure and workflow you've provided.
-
 # MCMC Methods for Stochastic Volatility Models
 
 This repository contains the Python implementation of several pseudo-marginal Markov chain Monte Carlo (MCMC) algorithms applied to a standard stochastic volatility (SV) model. The project compares the efficiency of different sampling strategies, including Particle Markov Chain Monte Carlo (PMMH) and MCMC with importance sampling (PM-IS), each both with and without enhancements like correlated proposals and adaptive jumps.
