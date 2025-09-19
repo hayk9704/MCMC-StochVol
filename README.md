@@ -4,10 +4,10 @@ This repository contains the Python implementation of several pseudo-marginal Ma
 
 ## Table of Contents
 
-  * [Overview](## Overview)
-  * [How to Use](## How to Use)
-  * [Technical File Descriptions](## Technical File Descriptions)
-  * [Dependencies](## Dependencies)
+  * [Overview](#-Overview)
+  * [How to Use](#-How to Use)
+  * [Technical File Descriptions](#-Technical File Descriptions)
+  * [Dependencies](#-Dependencies)
 
 ## Overview
 
