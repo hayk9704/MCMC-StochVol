@@ -46,7 +46,7 @@ When you run `main.py`:
 
 The `extract_stats.py` script is used to process the output chains for a **single model configuration** (e.g., all runs for PMMH with diagonal jumps and no correlation for T=700).
 
-1.  **Configure the script**: Open `extract_stats.py` and modify the variables in the **(I) choose model specifications** section to match the chains you want to analyze. For example:
+1.  **Configure the script**: Open `extract_stats.py` and modify the variables in the **choose model specifications** section to match the chains you want to analyze. For example:
     ```python
     T = 700
     MCMC_type = "PMMH"
