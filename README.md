@@ -4,11 +4,11 @@ This repository contains the Python implementation of several pseudo-marginal Ma
 
 ## Table of Contents
 
-  * [Overview](#-Overview)
-  * [How to Use](#-How-to-Use)
-  * [Technical File Descriptions](#-Technical -File-Descriptions)
-  * [Dependencies](#-Dependencies)
-
+* [Overview](#overview)
+* [How to Use](#how-to-use)
+* [Technical File Descriptions](#technical-file-descriptions)
+* [Dependencies](#dependencies)
+  
 ## Overview
 
 The core objective of this project is to estimate the parameters of a stochastic volatility model, which is crucial for understanding and forecasting risk in financial time series. Standard MCMC methods are often inefficient for such models due to the intractable likelihood function. This repository explores advanced pseudo-marginal methods that overcome this challenge by approximating the likelihood.
